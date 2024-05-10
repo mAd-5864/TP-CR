@@ -1,0 +1,52 @@
+function[] = Start()
+
+% Carregar o arquivo CSV com preservação dos nomes originais das colunas
+try
+    case_library = readtable('Start.csv', 'Delimiter', ';', 'HeaderLines', 1, 'PreserveVariableNames', true);
+    data = readtable('TrainAdaptado.csv', 'Delimiter', ';', 'HeaderLines', 1, 'PreserveVariableNames', true);
+catch
+    error('Erro ao carregar o arquivo CSV. Verifique o caminho e a formatação.');
+end
+
+% Obter os valores de entrada (Input_data)
+input = data{:, 3:end};
+
+% Obter os valores do alvo (Target_data)
+target = data{:, 2}; 
+
+% Criar uma rede neural feedforward com uma camada de 10 neurónios
+net = feedforwardnet(10);
+
+% Treinar a rede usando todos os exemplos (sem segmentação)
+net.divideParam.trainRatio = 1; % ratio of training set
+net.divideParam.valRatio = 0; % ratio of validation set
+net.divideParam.testRatio = 0; % ratio of test set
+
+% Iniciar o cronômetro para registrar o tempo de execução
+tic;
+
+% Treinar a rede
+net = train(net, input.', target.');
+
+% Parar o cronômetro
+toc;
+
+% Obter os valores de entrada (Input_data)
+Input_Start = case_library{:, 3:end};
+
+% Obter os valores do alvo (Target_data)
+Target_Start = case_library{:, 2}; 
+   
+Y = net(Input_Start.');
+
+% Exibir resultados
+
+% Exibir os valores de Target_Start
+disp('Valores de Target_Start:');
+disp(Target_Start);
+
+% Exibir os valores de Input_Start
+disp('Valores Predicted:');
+disp(Y');
+
+end
