@@ -15,7 +15,13 @@ function Train()
     trainFcns = {'trainscg', 'trainlm', 'trainrp'};
     
     % Definir diferentes funções de ativação
-    transferFcns = {'logsig', 'tansig', 'purelin'};
+    transferFcns = {'radbas', 'tansig', 'purelin'};
+
+    %Inicializar uma matriz para armazenar os resultados
+    resultados = [];
+
+    % Inicializar célula para armazenar as três melhores redes
+    melhores_redes = cell(3, 1);
 
     for f = 1:length(transferFcns)
         for g = 1:length(trainFcns)
@@ -47,10 +53,32 @@ function Train()
             fprintf("Erro: %f\n", erro);
             fprintf("Accuracy: %.2f%%\n", accuracy);
             fprintf("Execution Time: %.2f seconds\n", tempo_execucao);
+
+            %Adicionar os resultados à matriz
+            resultados = [resultados; {trainFcns{g}, transferFcns{f}, erro, accuracy, tempo_execucao}];
+
+            % Verificar se é uma das três melhores redes
+                if isempty(melhores_redes{1}) || accuracy > melhores_redes{1}.precisao
+                    melhores_redes{3} = melhores_redes{2};
+                    melhores_redes{2} = melhores_redes{1};
+                    melhores_redes{1} = struct('rede', net, 'precisao', accuracy);
+                elseif isempty(melhores_redes{2}) || accuracy > melhores_redes{2}.precisao
+                    melhores_redes{3} = melhores_redes{2};
+                    melhores_redes{2} = struct('rede', net, 'precisao', accuracy);
+                elseif isempty(melhores_redes{3}) || accuracy > melhores_redes{3}.precisao
+                    melhores_redes{3} = struct('rede', net, 'precisao', accuracy);
+                end
             end
         end
     end
     
-    % Save the best network
-    save('melhoresTrain.mat','net');
+    % Guardar as três melhores redes
+    save('melhores_redes.mat', 'melhores_redes');
+
+        % Converter a matriz de resultados em uma tabela
+    resultadosTable = cell2table(resultados, 'VariableNames', {'Função Treino', 'Função Ativação', 'Erro', 'Precisão', 'Tempo'});
+    
+    %Salvar a tabela em um arquivo Excel
+    writetable(resultadosTable, 'melhoresTrain.xlsx');
+
 end

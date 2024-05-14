@@ -1,56 +1,39 @@
 function Teste()
+
+    % Carregar as melhores redes
+    load('melhores_redes.mat', 'melhores_redes');
+
     try
         S = readmatrix('Test.csv', 'Delimiter', ';', 'DecimalSeparator', '.');
     catch
         error('Erro ao carregar o arquivo CSV. Verifique o caminho e a formatação.');
     end
 
-    % Obter os valores de entrada (Input_data)
+    % Obter os valores de entrada (input)
     input = S(:, 3:end)';
 
-    % Obter os valores do alvo (Target_data)
+    % Obter os valores do alvo (target)
     target = S(:, 2)';
 
-    % Definir diferentes funções de treino
-    trainFcns = {'trainscg', 'trainbfg', 'traingd'};
-    
-    % Definir diferentes funções de ativação
-    transferFcns = {'logsig', 'tansig', 'radbasn'};
+    % Inicializar matriz para armazenar as métricas de acerto
+    acertos = zeros(length(melhores_redes), 1);
 
-    for f = 1:length(transferFcns)
-        for g = 1:length(trainFcns)
-            for iteration = 1:30
-            %Criar rede neuronal
-            net = feedforwardnet(20);
-            net.divideFcn = '';
-
-            % Timer
-            tic;
-
-            % Alterar a função de ativação e treino
-            net.trainFcn = trainFcns{g};
-            net.layers{1}.transferFcn = transferFcns{f};
-
-            % Treinar a rede
-            net.trainParam.showWindow = false;
-            net = train(net, input, target);
-
-            % Parar o Timer
-            tempo_execucao = toc;
-
-            % Simular a rede e calcular o erro
-            y = net(input);
-            erro = perform(net, target, y);
-            accuracy = (1-erro)*100;
-
-            fprintf("\nFunçôes de Treino: %s e Ativação: %s\n", trainFcns{g}, transferFcns{f});
-            fprintf("Erro: %f\n", erro);
-            fprintf("Accuracy: %.2f%%\n", accuracy);
-            fprintf("Execution Time: %.2f seconds\n", tempo_execucao);
-            end
-        end
+    % Testar cada uma das melhores redes
+    for i = 1:length(melhores_redes)
+        % Simular a rede com o conjunto de dados de teste
+        y = melhores_redes{i}.rede(input);
+        
+        % Calcular o erro da rede
+        erro = perform(melhores_redes{i}.rede, target, y);
+        
+        % Converter os valores de saída para classes (0 ou 1)
+        y_class = round(y);
+        
+        % Calcular a métrica de acerto
+        acertos(i) = sum(y_class == target)/ length(target) * 100;
     end
-    
-    % Save the best network
-    save('melhoresTest.mat','net');
+
+    % Exibir as métricas de acerto
+    disp('Métricas de acerto das melhores redes:');
+    disp(acertos);
 end
