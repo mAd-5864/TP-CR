@@ -1,4 +1,4 @@
-function Teste()
+% function Teste()
 
     % Carregar as melhores redes
     load('melhores_redes.mat', 'melhores_redes');
@@ -13,7 +13,7 @@ function Teste()
     input = S(:, 3:end)';
 
     % Obter os valores do alvo (target)
-    target = S(:, 2)';
+    target = S(:, 2)'
 
     % Inicializar matriz para armazenar as métricas de acerto
     acertos = zeros(length(melhores_redes), 1);
@@ -27,7 +27,7 @@ function Teste()
         erro = perform(melhores_redes{i}.rede, target, y);
         
         % Converter os valores de saída para classes (0 ou 1)
-        y_class = round(y);
+        y_class = round(y)
         
         % Calcular a métrica de acerto
         acertos(i) = sum(y_class == target)/ length(target) * 100;
@@ -36,4 +36,4 @@ function Teste()
     % Exibir as métricas de acerto
     disp('Métricas de acerto das melhores redes:');
     disp(acertos);
-end
+% end

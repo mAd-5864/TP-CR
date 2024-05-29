@@ -1,4 +1,4 @@
-function Train()
+%function Train()
     try
         S = readmatrix('TrainAdaptado.csv', 'Delimiter', ';', 'DecimalSeparator', '.');
     catch
@@ -25,7 +25,7 @@ function Train()
 
     for f = 1:length(transferFcns)
         for g = 1:length(trainFcns)
-            for iteration = 1:30
+            for iteration = 1:1
             %Criar rede neuronal
             net = feedforwardnet(10);
             net.divideFcn = '';
@@ -81,4 +81,4 @@ function Train()
     %Salvar a tabela em um arquivo Excel
     writetable(resultadosTable, 'melhoresTrain.xlsx');
 
-end
+%end
