@@ -1,0 +1,162 @@
+tempoInicioScript = tic;
+
+% Limpar ambiente
+clear all;
+close all;
+clc;
+
+% Parâmetros básicos
+pathBase = '../datasets/train/';
+classes = {'circle', 'kite', 'parallelogram', 'square', 'trapezoid', 'triangle'};
+imgSize = [64 64];
+[X, Y] = carregarImagens(pathBase, classes, imgSize);
+
+% Normalização dos dados de entrada
+X = X / 255.0;
+
+% Configurações a testar
+topologias = {[20], [50], [100], [50 30], [100 50]};
+funcoesAtiv = {'logsig', 'tansig', 'poslin'};
+funcoesTreino = {'trainbfg', 'trainscg', 'traingdx'};
+
+divisoes = {
+    [0.7 0.15 0.15],
+    [0.5 0.25 0.25],
+    [0.8 0.1 0.1] };
+
+% Guarda resultados
+resultadoIndex = 1;
+resultados = [];
+
+for t = 1:length(topologias)
+    for fA = 1:length(funcoesAtiv)
+        for fT = 1:length(funcoesTreino)
+            for d = 1:length(divisoes)
+                precisaoGlobal = zeros(1, 10);
+                precisaoTeste = zeros(1, 10);
+                tempoTotal = 0;
+
+                for rep = 1:10
+
+                    net = patternnet(topologias{t});
+                    net.trainFcn = funcoesTreino{fT};
+
+                    net.trainParam.showWindow = false;
+                    net.trainParam.showCommandLine = false;
+                    net.trainParam.epochs = 1000;
+
+                    if strcmp(funcoesTreino{fT}, 'traingdx')
+                        net.trainParam.lr = 0.01;      % Menor taxa de aprendizado
+                        net.trainParam.mc = 0.9;       % Momentum para ajudar a sair de mínimos locais
+                        net.trainParam.max_fail = 15;  % Mais paciência antes de early stopping
+                    end
+                    
+                    % Funções de ativação
+                    for l = 1:length(net.layers) - 1
+                        net.layers{l}.transferFcn = funcoesAtiv{fA}; % Camadas ocultas
+                    end
+                    net.layers{end}.transferFcn = 'softmax'; % Camada de saída
+
+                    % Divisão de dados
+                    net.divideParam.trainRatio = divisoes{d}(1);
+                    net.divideParam.valRatio   = divisoes{d}(2);
+                    net.divideParam.testRatio  = divisoes{d}(3);
+
+                    net.performParam.regularization = 0.001;
+
+
+                    tic;
+                    [net, tr] = train(net, X, Y);
+                    tempoRep = toc;
+                    tempoTotal = tempoTotal + tempoRep;
+
+                    outputs = net(X);
+                    [~, pred] = max(outputs, [], 1);
+                    [~, actual] = max(Y, [], 1);
+                    precisaoGlobal(rep) = sum(pred == actual) / numel(actual) * 100;
+
+                    % Avaliação de teste
+                    testInd = tr.testInd;
+                    testOutputs = outputs(:, testInd);
+                    testTargets = Y(:, testInd);
+                    [~, predTest] = max(testOutputs, [], 1);
+                    [~, actTest] = max(testTargets, [], 1);
+                    precisaoTeste(rep) = sum(predTest == actTest) / numel(actTest) * 100;
+                end
+
+                % Calcula médias
+                mediaGlobal = mean(precisaoGlobal);
+                mediaTeste = mean(precisaoTeste);
+                tempoMedio = tempoTotal / 10;
+
+                fprintf('\n--- CONFIG %d | Topologia: [%s] | Ativação: %s | Treino: %s | Divisão: [%s] ---\n', ...
+                    resultadoIndex, num2str(topologias{t}), funcoesAtiv{fA}, ...
+                    funcoesTreino{fT}, num2str(divisoes{d}));
+                fprintf('Precisão Global Média: %.2f%% | Precisão Teste Média: %.2f%% | Tempo Médio: %.2f segundos\n', ...
+                    mediaGlobal, mediaTeste, tempoMedio);
+
+                % Guardar resultados da configuração
+                resultados(resultadoIndex).topologia = topologias{t};
+                resultados(resultadoIndex).funcAtiv = funcoesAtiv{fA};
+                resultados(resultadoIndex).funcTreino = funcoesTreino{fT};
+                resultados(resultadoIndex).divisao = divisoes{d};
+                resultados(resultadoIndex).mediaGlobal = mediaGlobal;
+                resultados(resultadoIndex).mediaTeste = mediaTeste;
+                resultados(resultadoIndex).tempoMedio = tempoMedio;
+
+                % Guardar rede temporariamente para poder recuperar as 3 melhores depois
+                nomeRedeTemp = sprintf('rede_temp_%d.mat', resultadoIndex);
+                save(fullfile('../redes_gravadas', nomeRedeTemp), 'net');
+                
+                resultados(resultadoIndex).nomeFicheiroTemp = nomeRedeTemp;
+
+                resultadoIndex = resultadoIndex + 1;
+            end
+        end
+    end
+end
+
+% Extrair todas as precisões de teste
+precisoesTeste = [resultados.mediaTeste];
+
+% Encontrar as 3 melhores redes
+[~, idxOrdenados] = sort(precisoesTeste, 'descend');
+top3Idx = idxOrdenados(1:min(3, length(idxOrdenados)));
+
+fprintf('\n===================================\n');
+fprintf('TOP 3 MELHORES CONFIGURAÇÕES:\n');
+for i = 1:length(top3Idx)
+    idx = top3Idx(i);
+    fprintf('\n%d. Precisão Teste: %.2f%%\n', i, resultados(idx).mediaTeste);
+    fprintf('   Topologia: [%s] | Ativação: %s | Treino: %s | Divisão: [%s]\n', ...
+        num2str(resultados(idx).topologia), resultados(idx).funcAtiv, ...
+        resultados(idx).funcTreino, num2str(resultados(idx).divisao));
+    
+    nomeFicheiroFinal = sprintf('rede_melhor_%d.mat', i);
+    pathFicheiroTemp = fullfile('../redes_gravadas', resultados(idx).nomeFicheiroTemp);
+    pathFicheiroFinal = fullfile('../redes_gravadas', nomeFicheiroFinal);
+    
+    tempData = load(pathFicheiroTemp);
+    net = tempData.net;
+    save(pathFicheiroFinal, 'net');
+    
+    resultados(idx).nomeArquivoFinal = nomeFicheiroFinal;
+end
+
+% Limpar os ficheiros temporários
+for i = 1:length(resultados)
+    if isfield(resultados(i), 'nomeArquivoTemp')
+        % Verificar se este arquivo não foi um dos escolhidos para manter
+        if ~any(i == top3Idx)
+            delete(fullfile('../redes_gravadas', resultados(i).nomeArquivoTemp));
+        end
+    end
+end
+
+% Exportar para Excel
+T = struct2table(resultados);
+writetable(T, fullfile('../resultados_excel', 'precisao_alinea_b.xlsx'));
+
+tempoTotalScript = toc(tempoInicioScript);
+fprintf('\n===================================\n');
+fprintf('TEMPO TOTAL DE EXECUÇÃO: %.2f min\n', tempoTotalScript/60);

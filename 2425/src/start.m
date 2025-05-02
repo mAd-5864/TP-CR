@@ -1,3 +1,8 @@
+% Limpar ambiente
+clear all;
+close all;
+clc;
+
 pathBase = '../datasets/start/';
 classes = {'circle', 'kite', 'parallelogram', 'square', 'trapezoid', 'triangle'};
 numClasses = numel(classes);
@@ -12,7 +17,7 @@ for i = 1:numClasses
         warning('Pasta não encontrada: %s', folder);
         continue;
     end
-    imgs = dir(fullfile(folder, '*.png')); % corrigido
+    imgs = dir(fullfile(folder, '*.png'));
     fprintf('%s: %d imagens encontradas\n', classes{i}, length(imgs));
     
     for j = 1:length(imgs)
@@ -48,3 +53,19 @@ end
 
 mediaPrecisao = mean(precisoes);
 fprintf('Média da precisão após 10 execuções: %.2f%%\n', mediaPrecisao);
+
+%     compet - Competitive transfer function.
+%     elliotsig - Elliot sigmoid transfer function.
+%     hardlim - Positive hard limit transfer function.
+%     hardlims - Symmetric hard limit transfer function.
+%     logsig - Logarithmic sigmoid transfer function.
+%     netinv - Inverse transfer function.
+%     poslin - Positive linear transfer function.
+%     purelin - Linear transfer function.
+%     radbas - Radial basis transfer function.
+%     radbasn - Radial basis normalized transfer function.
+%     satlin - Positive saturating linear transfer function.
+%     satlins - Symmetric saturating linear transfer function.
+%     softmax - Soft max transfer function.
+%     tansig - Symmetric sigmoid transfer function.
+%     tribas - Triangular basis transfer function.
