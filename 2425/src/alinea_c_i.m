@@ -34,9 +34,6 @@ for j = 1:length(pastas)
         precisao = sum(predicoes == reais) / numel(reais) * 100;
         matrizConfusao = calcularMatrizConfusao(predicoes, reais, length(classes));
 
-        % Guardar nova matriz de confusão
-        save(fullfile(pastaRedes, sprintf('conf_matrix_retest_%d.mat', i)), 'matrizConfusao');
-
         % Mostrar resultados
         fprintf('\nRede %d (%s)\n', i, nomeRede);
         fprintf('-> Precisão com pasta test: %.2f%%\n', precisao);
