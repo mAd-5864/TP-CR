@@ -1,3 +1,8 @@
+clear all
+close all
+restoredefaultpath
+rehash toolboxcache
+
 tempoInicioScript = tic;
 
 % Parâmetros básicos
@@ -53,7 +58,7 @@ for t = 1:length(topologias)
                         clear net tr;
                     end
 
-                    net = patternnet(topologias{t});
+                    net = feedforwardnet(topologias{t});
                     net.trainFcn = funcoesTreino{fT};
 
                     net.trainParam.showWindow = false;
@@ -99,20 +104,20 @@ for t = 1:length(topologias)
                         [~, predTest] = max(testOutputs, [], 1);
                         [~, actTest] = max(testTargets, [], 1);
                         precisaoTeste(rep) = sum(predTest == actTest) / numel(actTest) * 100;
-                        
+
                         % Cálculo da matriz de confusão
                         matrizConfusao = calcularMatrizConfusao(predTest, actTest, length(classes));
                         matrizConfusaoFinal = matrizConfusaoFinal + matrizConfusao;
-                        
+
                     catch ME
                         fprintf('Erro na repetição %d:\n%s\n', rep, getReport(ME));
                         precisaoGlobal(rep) = 0;
                         precisaoTeste(rep) = 0;
                         tempoRep = 0;
                     end
-                fprintf('.');
+                    fprintf('.');
                 end
-                
+
                 % Calcula médias
                 validGlobal = precisaoGlobal(precisaoGlobal > 0);
                 validTeste = precisaoTeste(precisaoTeste > 0);
@@ -177,25 +182,30 @@ for i = 1:length(melhoresRedes)
 
         net = melhoresRedes(i).net;
         matrizConfusao = melhoresRedes(i).matrizConfusao;
-        
+
+        pastaMelhores = fullfile('../redes_gravadas', 'teste6');
+        if ~exist(pastaMelhores, 'dir')
+            mkdir(pastaMelhores);
+        end
+
         % Salvar rede e matriz de confusão
         nomeFicheiroFinal = sprintf('rede_melhor_%d.mat', i);
-        save(fullfile('../redes_gravadas/teste5', nomeFicheiroFinal), 'net', 'matrizConfusao');
+        save(fullfile(pastaMelhores, nomeFicheiroFinal), 'net', 'matrizConfusao');
 
         resultados(idx).nomeFicheiroFinal = nomeFicheiroFinal;
-        
+
         % Criar visualização para as 3 melhores redes
         h = figure;
         plotConfusionMatrix(matrizConfusao, classes);
         title(sprintf('Matriz de Confusão - Melhor Rede %d', i));
-        saveas(h, fullfile('../redes_gravadas/teste5', sprintf('conf_matrix_melhor_%d.png', i)));
+        saveas(h, fullfile(pastaMelhores, sprintf('conf_matrix_melhor_%d.png', i)));
         close(h);
     end
 end
 
 % Exportar para Excel
 T = struct2table(resultados);
-writetable(T, fullfile('../resultados_excel', 'precisao_alinea_b_teste_5.xlsx'));
+writetable(T, fullfile('../resultados_excel', 'precisao_alinea_b_teste_6.xlsx'));
 
 tempoTotalScript = toc(tempoInicioScript);
 fprintf('\n===================================\n');
@@ -203,46 +213,46 @@ fprintf('TEMPO TOTAL DE EXECUÇÃO: %.2f min\n', tempoTotalScript/60);
 
 % Função para calcular a matriz de confusão
 function confMatrix = calcularMatrizConfusao(predicoes, reais, numClasses)
-    confMatrix = zeros(numClasses, numClasses);
-    for i = 1:length(predicoes)
-        confMatrix(reais(i), predicoes(i)) = confMatrix(reais(i), predicoes(i)) + 1;
-    end
+confMatrix = zeros(numClasses, numClasses);
+for i = 1:length(predicoes)
+    confMatrix(reais(i), predicoes(i)) = confMatrix(reais(i), predicoes(i)) + 1;
+end
 end
 
 % Função para a matriz de confusão
 function plotConfusionMatrix(confMatrix, classNames)
-    confMatrixPercent = zeros(size(confMatrix));
-    for i = 1:size(confMatrix, 1)
-        if sum(confMatrix(i,:)) > 0
-            confMatrixPercent(i,:) = confMatrix(i,:) / sum(confMatrix(i,:)) * 100;
-        end
+confMatrixPercent = zeros(size(confMatrix));
+for i = 1:size(confMatrix, 1)
+    if sum(confMatrix(i,:)) > 0
+        confMatrixPercent(i,:) = confMatrix(i,:) / sum(confMatrix(i,:)) * 100;
     end
-    
-    imagesc(confMatrixPercent);
-    colormap('jet');
-    colorbar;
-    
-    % Adicionar rótulos
-    numClasses = length(classNames);
-    set(gca, 'XTick', 1:numClasses, 'XTickLabel', classNames, ...
-        'YTick', 1:numClasses, 'YTickLabel', classNames);
-    xtickangle(45);
-    
-    % Adicionar valores nas células
-    [x, y] = meshgrid(1:numClasses);
-    for i = 1:numClasses
-        for j = 1:numClasses
-            if confMatrixPercent(i,j) > 50
-                textColor = [0 0 0]; % Preto para valores altos
-            else
-                textColor = [1 1 1]; % Branco para valores baixos
-            end
-            text(j, i, sprintf('%.1f%%', confMatrixPercent(i,j)), ...
-                'HorizontalAlignment', 'center', 'Color', textColor);
+end
+
+imagesc(confMatrixPercent);
+colormap('jet');
+colorbar;
+
+% Adicionar rótulos
+numClasses = length(classNames);
+set(gca, 'XTick', 1:numClasses, 'XTickLabel', classNames, ...
+    'YTick', 1:numClasses, 'YTickLabel', classNames);
+xtickangle(45);
+
+% Adicionar valores nas células
+[x, y] = meshgrid(1:numClasses);
+for i = 1:numClasses
+    for j = 1:numClasses
+        if confMatrixPercent(i,j) > 50
+            textColor = [0 0 0]; % Preto para valores altos
+        else
+            textColor = [1 1 1]; % Branco para valores baixos
         end
+        text(j, i, sprintf('%.1f%%', confMatrixPercent(i,j)), ...
+            'HorizontalAlignment', 'center', 'Color', textColor);
     end
-    
-    xlabel('Classe Prevista');
-    ylabel('Classe Real');
-    title('Matriz de Confusão (%)');
+end
+
+xlabel('Classe Prevista');
+ylabel('Classe Real');
+title('Matriz de Confusão (%)');
 end
