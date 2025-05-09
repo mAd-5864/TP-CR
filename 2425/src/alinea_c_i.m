@@ -11,7 +11,7 @@ Xtest = Xtest / 255.0;
 
 fprintf('A testar redes guardadas com imagens da pasta "test"...\n');
 % Diretório com as melhores redes
-pastas = dir('../redes_gravadas/teste*');
+pastas = dir('../redes_gravadas/estudoNNN');
 
 for j = 1:length(pastas)
     pastaRedes = fullfile(pastas(j).folder, pastas(j).name);

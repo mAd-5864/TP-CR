@@ -15,14 +15,16 @@ imgSize = [32 32];
 X = X / 255.0;
 
 % Configurações a testar
-topologias = {[50], [75], [100, 50], [100, 100]};
-funcoesAtiv = {'logsig', 'tansig'};
-funcoesTreino = {'trainscg', 'traingdx'};
+topologias = {20,[50],75,[50 100],[100 100]};
+funcoesAtiv = {'logsig','tansig', 'poslin','purelin', 'radbas', 'satlin'};
+funcoesTreino = {'trainrp','trainscg','traingdx','traincgf','traingda'};
 
 divisoes = {
+    [0.33 0.33 0.33],
+    [0.9 0.05 0.05],
     [0.7 0.15 0.15],
-    [0.5 0.25 0.25],
-    [0.8 0.1 0.1] };
+    [0.8 0.1 0.1],
+    [0.5 0.25 0.25] };
 
 % Guarda resultados
 resultadoIndex = 1;
@@ -183,7 +185,7 @@ for i = 1:length(melhoresRedes)
         net = melhoresRedes(i).net;
         matrizConfusao = melhoresRedes(i).matrizConfusao;
 
-        pastaMelhores = fullfile('../redes_gravadas', 'teste6');
+        pastaMelhores = fullfile('../redes_gravadas', 'estudoNNN');
         if ~exist(pastaMelhores, 'dir')
             mkdir(pastaMelhores);
         end
@@ -205,7 +207,7 @@ end
 
 % Exportar para Excel
 T = struct2table(resultados);
-writetable(T, fullfile('../resultados_excel', 'precisao_alinea_b_teste_6.xlsx'));
+writetable(T, fullfile('../resultados_excel', 'precisao_alinea_b_estudoNNN.xlsx'));
 
 tempoTotalScript = toc(tempoInicioScript);
 fprintf('\n===================================\n');
