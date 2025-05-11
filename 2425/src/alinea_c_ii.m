@@ -34,7 +34,7 @@ for j = 1:length(pastas)
     for i = 1:length(ficheirosRedes)
         nomeRede = ficheirosRedes(i).name;
         pathRede = fullfile(pastaRedes, nomeRede);
-        
+        []
         dados = load(pathRede);
         redeOriginal = dados.net;
         
@@ -48,7 +48,6 @@ for j = 1:length(pastas)
         
         nomeNovaRede = sprintf('rede_test_%d', i);
         novaRede = feedforwardnet(config);
-
         
         % Treinar a nova rede apenas com imagens da pasta test
         fprintf('Treinando rede com imagens da pasta test...\n');
@@ -56,7 +55,19 @@ for j = 1:length(pastas)
         [novaRede, tr] = train(novaRede, Xtest, Ytest);
         tempoTreino = toc(tempoInicioTreino);
         
-        % Avaliar a rede em cada conjunto de dados
+        % Calcular precisão real de treino
+        outputsTreino = novaRede(Xtest(:, tr.trainInd));
+        [~, predsTreino] = max(outputsTreino, [], 1);
+        [~, reaisTreino] = max(Ytest(:, tr.trainInd), [], 1);
+        precisaoTreino = sum(predsTreino == reaisTreino) / numel(reaisTreino) * 100;
+
+        % Calcular precisão real de validação
+        outputsVal = novaRede(Xtest(:, tr.valInd));
+        [~, predsVal] = max(outputsVal, [], 1);
+        [~, reaisVal] = max(Ytest(:, tr.valInd), [], 1);
+        precisaoVal = sum(predsVal == reaisVal) / numel(reaisVal) * 100;
+
+        % Avaliar a rede nos três conjuntos
         fprintf('Avaliando rede com imagens da pasta start...\n');
         saidasStart = novaRede(Xstart);
         [~, predicoesStart] = max(saidasStart, [], 1);
@@ -78,14 +89,14 @@ for j = 1:length(pastas)
         matrizConfusao = calcularMatrizConfusao(predicoesTest, reaisTest, length(classes));
         
         fprintf('\nResultados para rede %s:\n', nomeNovaRede);
-        fprintf('-> Precisão de treino: %.2f%%\n', tr.best_perf * 100);
-        fprintf('-> Precisão de validação: %.2f%%\n', tr.best_vperf * 100);
+        fprintf('-> Precisão de treino: %.2f%%\n', precisaoTreino);
+        fprintf('-> Precisão de validação: %.2f%%\n', precisaoVal);
         fprintf('-> Precisão com pasta start: %.2f%%\n', precisaoStart);
         fprintf('-> Precisão com pasta train: %.2f%%\n', precisaoTrain);
         fprintf('-> Precisão com pasta test: %.2f%%\n', precisaoTest);
         fprintf('-> Tempo de treino: %.2f segundos\n', tempoTreino);
         
-        novaLinha = {nomeNovaRede, tr.best_perf * 100, tr.best_vperf * 100, ...
+        novaLinha = {nomeNovaRede, precisaoTreino, precisaoVal, ...
                      precisaoStart, precisaoTrain, precisaoTest, tempoTreino};
         resultados = [resultados; novaLinha];
         
