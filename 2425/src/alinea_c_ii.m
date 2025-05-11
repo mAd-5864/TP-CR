@@ -48,14 +48,7 @@ for j = 1:length(pastas)
         
         nomeNovaRede = sprintf('rede_test_%d', i);
         novaRede = feedforwardnet(config);
-        
-        % Configurar parâmetros de treino
-        novaRede.divideFcn = 'dividerand';
-        novaRede.divideParam.trainRatio = 0.7;
-        novaRede.divideParam.valRatio = 0.15;
-        novaRede.divideParam.testRatio = 0.15;
-        novaRede.trainFcn = 'trainscg';
-        novaRede.performFcn = 'crossentropy';
+
         
         % Treinar a nova rede apenas com imagens da pasta test
         fprintf('Treinando rede com imagens da pasta test...\n');
